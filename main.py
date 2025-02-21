@@ -3,15 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 def find_optimal_route(place_name, orig_coords, dest_coords):
-    """
-    Fetches the road network from OpenStreetMap and finds the shortest route
-    between two geographical points using Dijkstra's algorithm.
-
-    :param place_name: Location name (city or region)
-    :param orig_coords: (lat, lon) tuple for the starting point
-    :param dest_coords: (lat, lon) tuple for the destination point
-    :return: None (Displays a route map)
-    """
+   
 
     # 1️⃣ Download the street network (drivable roads)
     print(f"Fetching road network for {place_name}...")
