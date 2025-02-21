@@ -25,8 +25,8 @@ def find_optimal_route(place_name, orig_coords, dest_coords):
     print("Route plotted successfully!")
 
 # Example usage
-place = "New York, USA"  # Change this to your desired location
-start_coordinates = (40.748817, -73.985428)  # Empire State Building (lat, lon)
-end_coordinates = (40.730610, -73.935242)  # Destination in NYC
+place = "Surat, India"  # Change this to your desired location
+start_coordinates = (21.2030, 72.8377)  # Empire State Building (lat, lon)
+end_coordinates = (21.1173, 72.7405)  # Destination in NYC
 
 find_optimal_route(place, start_coordinates, end_coordinates)
