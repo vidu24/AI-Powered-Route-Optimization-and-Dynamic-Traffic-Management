@@ -1,6 +1,36 @@
 import osmnx as ox
 import networkx as nx
 import matplotlib.pyplot as plt
+import heapq
+
+def dijkstra(graph, source, target, weight='length'):
+    # Initialize the priority queue
+    queue = [(0, source)]
+    distances = {node: float('inf') for node in graph.nodes}
+    distances[source] = 0
+    predecessors = {node: None for node in graph.nodes}
+
+    while queue:
+        current_distance, current_node = heapq.heappop(queue)
+
+        if current_node == target:
+            break
+
+        for neighbor, attributes in graph[current_node].items():
+            distance = current_distance + attributes.get(weight, 1)
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                predecessors[neighbor] = current_node
+                heapq.heappush(queue, (distance, neighbor))
+
+    # Reconstruct the shortest path
+    path = []
+    node = target
+    while node is not None:
+        path.append(node)
+        node = predecessors[node]
+    path.reverse()
+    return path
 
 def find_optimal_route(place_name, orig_coords, dest_coords):
    
@@ -16,7 +46,7 @@ def find_optimal_route(place_name, orig_coords, dest_coords):
 
     # 3️⃣ Compute shortest path using Dijkstra's algorithm (based on distance)
     print("Computing shortest path using Dijkstra's algorithm...")
-    shortest_path = nx.shortest_path(graph, source=orig_node, target=dest_node, weight="length")
+    shortest_path = dijkstra(graph, orig_node, dest_node, weight="length")
 
     # 4️⃣ Visualize the route
     print("Plotting the optimal route...")
