@@ -92,3 +92,35 @@ start_coordinates = (21.2030, 72.8377)
 end_coordinates = (21.1173, 72.7405)
 
 find_optimal_route(place, start_coordinates, end_coordinates, algorithm='dijkstra')
+
+
+
+"""
+
+In the provided code, `geopy` is specifically used within the `heuristic` function of the A* algorithm. Here's why:
+
+**Purpose of `geopy` in the `heuristic` function:**
+
+* **Estimating Distance:**
+    * The A* algorithm requires a heuristic function to estimate the distance between a current node and the target node.
+    * The `heuristic` function aims to provide an *underestimation* of the remaining distance, which helps the algorithm efficiently explore the graph.
+    * `geopy.distance.geodesic` calculates the geodesic distance (the shortest distance between two points on the Earth's surface) using latitude and longitude coordinates.
+    * This provides a reasonable and relatively accurate estimate of the straight-line distance between two nodes, which is then used as the heuristic value.
+* **Working with Geographic Coordinates:**
+    * OSMnx graphs store node positions as latitude and longitude coordinates.
+    * `geopy` is designed to work with these geographic coordinates, making it convenient for calculating distances on the Earth's surface.
+* **Improved A* Performance:**
+    * By providing a more accurate heuristic (compared to, say, a simple Euclidean distance calculation), `geopy` helps the A* algorithm make better decisions about which nodes to explore first. This can lead to faster convergence to the optimal path.
+
+**Why not just use Euclidean distance?**
+
+* While Euclidean distance could be used, it wouldn't accurately reflect distances on the Earth's curved surface, especially over longer distances.
+* Geodesic distance takes the earths curvature into account.
+* For shorter distances the difference is minimal, but for longer distances, the geodesic distance is much more accurate.
+
+**In summary:**
+
+`geopy` is used to provide a geographically accurate heuristic estimate in the A* algorithm, improving its performance by guiding it towards the target node more efficiently.
+
+
+"""
