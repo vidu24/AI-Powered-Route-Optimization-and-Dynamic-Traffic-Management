@@ -1,4 +1,7 @@
 import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
+from scipy.spatial import distance  # Correct Euclidean distance function
 
 def Djikstra(Start, End, graph):
     """Finds the shortest path using Dijkstra’s Algorithm."""

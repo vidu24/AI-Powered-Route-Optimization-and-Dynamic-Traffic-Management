@@ -1,8 +1,4 @@
 import osmnx as ox
-import networkx as nx
-import matplotlib.pyplot as plt
-import heapq
-from scipy.spatial import distance  # Correct Euclidean distance function
 from AlgoFile import *
 
 ox.settings.overpass_max_query_area_size = 1000000000  # Increase limit
