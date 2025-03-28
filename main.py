@@ -1,115 +1,99 @@
 import osmnx as ox
-import networkx as nx
-import matplotlib.pyplot as plt
+import requests
+from AlgoFile import *
+
+ox.settings.overpass_max_query_area_size = 1000000000  # Increase limit
+
+TOMTOM_API_KEY = "MzgYwyFsJpEDwOCbYmlk4QDFfOmBVVaQ"
+
+def get_traffic_data(lat, lon):
+    """Fetch real-time traffic flow data from TomTom API."""
+    url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={lat},{lon}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        return data["flowSegmentData"]["currentSpeed"], data["flowSegmentData"]["freeFlowSpeed"]
+    else:
+        return None, None  # Return None if no traffic data is available
 
 def Obtain_Coordinates():
-    start = input("Enter the full name of location that you intend to start from: ")
-    end = input("Enter the full name of your destination location: ")
+    while True:
+        try:
+            start = input("Enter the full name of the location you intend to start from: ")
+            end = input("Enter the full name of your destination location: ")
 
-    Start = ox.geocode(start)
-    End = ox.geocode(end)  # Lat and Long
-    return Start, End
+            if start.lower() == end.lower():
+                print("Start and End locations are the same.")
+                return None, None
+
+            Start = ox.geocode(start)
+            End = ox.geocode(end)  # Convert to (latitude, longitude)
+            return Start, End
+        except Exception as e:
+            print(f"Error: {e}. Please enter a valid location.")
 
 def Graphing(Start, End, Area):
-    graph = ox.graph_from_place(Area, network_type="drive")
-    Start = ox.distance.nearest_nodes(graph, Start[1], Start[0])
-    End = ox.distance.nearest_nodes(graph, End[1], End[0])
+    """Fetches road network graph and finds the nearest nodes for start & end locations."""
+    try:
+        graph = ox.graph_from_place(Area, network_type="drive")
+        Start = ox.distance.nearest_nodes(graph, Start[1], Start[0])
+        End = ox.distance.nearest_nodes(graph, End[1], End[0])
+        return Start, End, graph
+    except Exception as e:
+        print(f"Error in Graphing: {e}")
+        exit(1)
 
-    return Start, End, graph
+def update_graph_with_traffic(graph):
+    """Update graph edge weights with real-time traffic data."""
+    for u, v, key, data in graph.edges(keys=True, data=True):
+        lat = (graph.nodes[u]["y"] + graph.nodes[v]["y"]) / 2
+        lon = (graph.nodes[u]["x"] + graph.nodes[v]["x"]) / 2
 
-def Djikstra(Start, End, graph):
-    distances = {node: float('inf') for node in graph.nodes}
-    predecessors = {node: None for node in graph.nodes}
-    distances[Start] = 0
-    Queue = [(Start, 0)]
+        current_speed, free_flow_speed = get_traffic_data(lat, lon)
+        if current_speed and free_flow_speed:
+            travel_time = data["length"] / (current_speed * 1000 / 3600)  # Convert speed from km/h to m/s
+            data["travel_time"] = travel_time
+        else:
+            data["travel_time"] = data["length"] / (50 * 1000 / 3600)  # Default speed: 50 km/h
 
-    while Queue:
-        Curr, Curr_Distance = Queue.pop(0)
-
-        if Curr == End:
-            break
-
-        neighbours = sorted(graph[Curr].items(), key=lambda item: item[0])
-
-        for neighbor, edge_data in neighbours:
-            for _, attributes in edge_data.items():
-                length = attributes["length"] + Curr_Distance
-
-                if distances[neighbor] > length:
-                    distances[neighbor] = length
-                    predecessors[neighbor] = Curr
-                    Queue.append((neighbor, length))
-
-    path = []
-    node = End
-    while node is not None:
-        path.append(node)
-        node = predecessors[node]
-
-    path.reverse()
-    return path if path[0] == Start else []  # Ensure a valid path
-
-def A_Star(Start, End, graph):
-
-    Queue = [(Start, 0)]
-    predecessors = {Start: None}
-    G = {node: float('inf') for node in graph.nodes}
-    G[Start] = 0
-
-    while Queue:
-        Queue.sort(key=lambda x: x[1])
-        current, _ = Queue.pop(0)
-
-        if current == End:
-            break
-
-        for neighbor in graph.neighbors(current):
-            edge_length = graph[current][neighbor][0]["length"]
-            temp_G = G[current] + edge_length
-
-            if temp_G < G[neighbor]:
-                G[neighbor] = temp_G
-
-                y1, x1 = graph.nodes[neighbor]['y'], graph.nodes[neighbor]['x']
-                y2, x2 = graph.nodes[End]['y'], graph.nodes[End]['x']
-                heuristic = ox.distance.euclidean(y1, x1, y2, x2)
-
-                Val = temp_G + heuristic
-
-                for i, (node, _) in enumerate(Queue):
-                    if node == neighbor:
-                        Queue[i] = (neighbor, Val)
-                        break
-                else:
-                    Queue.append((neighbor, Val))
-
-                predecessors[neighbor] = current
-
-    path = []
-    node = End
-    while node is not None:
-        path.append(node)
-        node = predecessors.get(node)
-
-    if path[-1] != Start:
-        return []
-
-    path.reverse()
-    return path
-
+    return graph
 
 def Mapping(graph, Path, Start, End):
-    node_colors = ["blue" if node not in [Start, End] else "red" for node in graph.nodes]
-    fig, ax = ox.plot_graph_route(graph, Path, route_linewidth=4, node_size=1,node_color=node_colors, bgcolor="white", route_color="purple")
+    """Plots the graph with the route and distinguishes Start and End nodes."""
 
+    node_colors = ["blue" if node not in [Start, End] else "green" if node == Start else "red" for node in graph.nodes]
+    node_sizes = [0 if node not in [Start, End] else 200 for node in graph.nodes]  # Larger size for Start/End
+
+    fig, ax = ox.plot_graph_route(
+        graph, Path,
+        route_linewidth=4,
+        node_size=node_sizes,
+        node_color=node_colors,
+        bgcolor="white",
+        route_color="purple",
+        node_zorder=3
+    )
+
+# Get user input interactively
 Area = input("Enter the City name along with country (Example: Dubai, UAE): ")
 Org, Dest = Obtain_Coordinates()
-print(Org, Dest)
 
+# If start and end are the same, exit the program
+if Org is None or Dest is None:
+    exit(0)
+
+print(f"Coordinates obtained: {Org} -> {Dest}")
+
+# Create graph
 Org, Dest, graph = Graphing(Org, Dest, Area)
-print("Djikstra")
+
+# Run Dijkstra Algorithm
+print("\nDijkstra Path:")
 Path = Djikstra(Org, Dest, graph)
 Mapping(graph, Path, Org, Dest)
-print("A*")
+
+# Run A* Algorithm
+print("\nA* Path:")
 Path2 = A_Star(Org, Dest, graph)
 Mapping(graph, Path2, Org, Dest)
