@@ -4,7 +4,7 @@ from AlgoFile import *
 
 ox.settings.overpass_max_query_area_size = 1000000000  # Increase limit
 
-TOMTOM_API_KEY = "MzgYwyFsJpEDwOCbYmlk4QDFfOmBVVaQ" # Tom Tom API Key
+# TOMTOM_API_KEY = "MzgYwyFsJpEDwOCbYmlk4QDFfOmBVVaQ" # Tom Tom API Key
 
 def get_traffic_data(lat, lon):
     """Fetch real-time traffic flow data from TomTom API."""
