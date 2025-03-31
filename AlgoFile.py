@@ -3,7 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.spatial import distance  # Correct Euclidean distance function
 
-def Djikstra(Start, End, graph):
+def Djikstra(Start, End, graph): # Updated according to traffic data
     """Finds the shortest time-based path using Dijkstra’s Algorithm."""
     distances = {node: float('inf') for node in graph.nodes}
     predecessors = {node: None for node in graph.nodes}
@@ -27,7 +27,7 @@ def Djikstra(Start, End, graph):
 
     return reconstruct_path(End, predecessors, Start)
 
-def A_Star(Start, End, graph):
+def A_Star(Start, End, graph): # Updated according to traffic data
     """Finds the shortest time-based path using A* Search Algorithm."""
     queue = [(0, Start)]
     predecessors = {Start: None}
