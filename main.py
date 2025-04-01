@@ -1,24 +1,7 @@
 import osmnx as ox
-import requests
 from AlgoFile import *
-from dotenv import load_dotenv
-import os
 
 ox.settings.overpass_max_query_area_size = 1000000000  # Increase limit
-
-load_dotenv()  # Load environment variables from .env file
-TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY")
-
-def get_traffic_data(lat, lon):
-    """Fetch real-time traffic flow data from TomTom API."""
-    url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={lat},{lon}"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()
-        return data["flowSegmentData"]["currentSpeed"], data["flowSegmentData"]["freeFlowSpeed"]
-    else:
-        return None, None  # Return None if no traffic data is available
 
 def Obtain_Coordinates():
     while True:
@@ -53,13 +36,15 @@ def update_graph_with_traffic(graph):
         lat = (graph.nodes[u]["y"] + graph.nodes[v]["y"]) / 2
         lon = (graph.nodes[u]["x"] + graph.nodes[v]["x"]) / 2
 
+        # Fetch traffic data from TomTom API
         current_speed, free_flow_speed = get_traffic_data(lat, lon)
-        if current_speed and free_flow_speed:
+
+        # Calculate travel time based on current speed from traffic data
+        if current_speed:
             travel_time = data["length"] / (current_speed * 1000 / 3600)  # Convert speed from km/h to m/s
             data["travel_time"] = travel_time
         else:
             data["travel_time"] = data["length"] / (50 * 1000 / 3600)  # Default speed: 50 km/h
-
     return graph
 
 def Mapping(graph, Path, Start, End):
@@ -91,12 +76,11 @@ print(f"Coordinates obtained: {Org} -> {Dest}")
 # Create graph
 Org, Dest, graph = Graphing(Org, Dest, Area)
 
-# Run Dijkstra Algorithm
-print("\nDijkstra Path:")
-Path = Djikstra(Org, Dest, graph)
-Mapping(graph, Path, Org, Dest)
+# Now, run the algorithms:
+# print("\nDijkstra Path with Traffic:")
+# Path = Djikstra_with_traffic(Org, Dest, graph)
+# Mapping(graph, Path, Org, Dest)
 
-# Run A* Algorithm
-print("\nA* Path:")
-Path2 = A_Star(Org, Dest, graph)
+print("\nA* Path with Traffic:")
+Path2 = A_Star_with_traffic(Org, Dest, graph)
 Mapping(graph, Path2, Org, Dest)
