@@ -10,29 +10,44 @@ vi) overlap the output on the map.
 To present the Generic Graph, we can make use of the Graph-simulating libraries and work on that. 
 Map things and all, I believe OSM is used, but the extent of it's viability & utility is unknown to me.
 
-Date : 24/3/25
+Date : 1/4/25
 
 Code Explanation :
 
 osmnx → Fetches map data (like roads) from OpenStreetMap (OSM) and performs route calculations.
 networkx → Represents the road network as a graph (nodes = intersections, edges = roads).
+import requests -> used to request data from the source
+from dotenv import load_dotenv & import os -> used to load data/variables present in .env
 
-Obtain Coordinates: Takes the Names of the Start Point & End Point respectively. It uses osmnx's geocode function which takes the Provided information and provided the Latitude & Longitude values of the points in the form of a 2 Tuple (Lat, Long). It returns the two 2-Tuple.
+.env File : File where we store important information like API Keys
+.gitignore File : File names written inside this are ingnored by git while pushing into the repo
+
+main.py :
+
+-> Obtain Coordinates: Takes the Names of the Start Point & End Point respectively. It uses osmnx's geocode function which takes the Provided information and provided the Latitude & Longitude values of the points in the form of a 2 Tuple (Lat, Long). It returns the two 2-Tuple.
 Avoids the error of Start and ending location being the same point
 
-Graphing: Takes the Area that we are working with (provided in main by the user), as well as the 2-Tuple of the Start & End points. It takes the Area Label and using the osnmx's graph_from_place, provides us the graph taht consists of nodes which are intersections and edges which are roads.
+-> Graphing: Takes the Area that we are working with (provided in main by the user), as well as the 2-Tuple of the Start & End points. It takes the Area Label and using the osnmx's graph_from_place, provides us the graph taht consists of nodes which are intersections and edges which are roads.
 The Graphing Function also returns the nearest node to the Start and End points. It's important to know that the approximation function, osmnx's distance.nearest_nodes Takes Longitude and Then Latitude. Returns the Graph, Start and End which are node IDs.
 
-Djikstra: It is the classic Djikstra's Algorithm implemented and fitted according to the needs of this particular program.It has within it, initialized Queue, holding updating distances from Start, and the Node itself, predecessor dictionary, helping us trace the path that we have traversed, distances Dictionary, that keeps track of our Distances, initialized with all values set to infinity, and Start's to 0.
+-> Mapping: It is where the Path on the Map is represented visually. It takes in the Graph, Path, Start and End, sets the sizes and colours of the Start & End Nodes as well as the Path. And using the osmnx's plot_graph_route (and it's various attribute values), we're able to obtain the visual represenatation of the map.
 
-It runs as long as Queue has some contituents within it and/or End not found. It pops an item, and if End is found, ends the program.Else, produces the neighbouring nodes (graph[Curr].items()) and their respective distances (attributes["length"]) from the start, by adding the (Current_Node -> Child_Node) Distance and distance traversed thus far.If the new distance to the Child_node is lesser compared to its original computed distance.The value is updated in the distance dictionary. As it is updated, it is also appended to the Queue.It is important to mention that the Queue used is a Priority Queue, thus, as is the process of Djikstra, the lowest distance is popped out first for computation.It uses the reconstruct_path function to produce path by sending in the Start, End and Predecessor Dictionary
+AlgoFile.py :
 
-A*: Similar to Djikstra, this is the Classic A* Algorithm that has been implemented to fit the needs of the current program. It, as Djikstra, takes a Queue, prodecessor & distance (relabled to G) dictionaries. The distances are all intiialized to infinity, and distance from Start -> Start is set to 0.
+-> get_traffic_data : takes latitude and longitude as input and fetch real-time traffic flow data
 
-The Program runs as long as Queue has some constituents within it and/or End not found. It pops an item, and if End is found, ends the program.
-Else, it produces neighbouring nodes (graph.neighbors(current)), finds distance using [graph.get_edge_data(current, neighbor, default={})] and the attribute "length".The distance data is then used to calculate the G(n) value by adding the length of the edge along with the G[current].
-If the calculated value is lesser than the value in G dictionary, it is updated, and obtaining (Lat, Long) tuples of node in focus and End, we're able to calculate the H(n) using distance.euclidean.This is then added to the Calculated G(n) value to produce the heurisitic, which along with the node is added to the Queue.It is important to mention that the Queue used is a Priority Queue, thus, as is the process of A*, the lowest F(n) is popped out first for computation.It uses the reconstruct_path function to produce path by sending in the Start, End and Predecessor Dictionary.
+-> `Dijkstra_with_traffic` algorithm extends the traditional Dijkstra’s approach by incorporating real-time traffic data to determine the fastest route between a start and destination point. Instead of relying solely on distance, it dynamically adjusts travel times based on live traffic speeds retrieved from the TomTom Traffic API.  
 
-reconstruct_path: using the predecessor dictionary, we're able to track the nodes that we have traversed backwards, i.e., From End to start. The nodes are appended to a List and returned after reversal
+The algorithm maintains a priority queue to process nodes in order of increasing travel time, ensuring efficiency. As each node is explored, its neighboring edges are evaluated using real-time speed data. Travel time is calculated by dividing the road segment length by the current speed, with a default of 50 km/h used when live data is unavailable. If a newly computed travel time is shorter than a previously recorded one, updates are made, and the node is added to the queue for further processing.  
 
-Mapping: It is where the Path on the Map is represented visually. It takes in the Graph, Path, Start and End, sets the sizes and colours of the Start & End Nodes as well as the Path. And using the osmnx's plot_graph_route (and it's various attribute values), we're able to obtain the visual represenatation of the map.
+The process continues until the shortest-time path is found. The algorithm then reconstructs the optimal route using a predecessor dictionary, ensuring an adaptive and traffic-aware navigation solution.
+
+-> `A*_with_traffic` algorithm is an optimized version of the classic A* search that incorporates real-time traffic data to determine the fastest route. Unlike traditional A*, which minimizes distance using a heuristic function, this implementation adjusts travel times dynamically based on live traffic speeds from the TomTom Traffic API.  
+
+The algorithm maintains a priority queue where nodes are processed based on their total estimated cost (`F = G + H`). `G(n)` represents the actual travel time from the start node, while `H(n)` is a heuristic estimate of the remaining travel time, calculated using the Euclidean distance between the current node and the destination.  
+
+As nodes are explored, live traffic data is fetched for the corresponding road segments, and travel time is computed by dividing the segment length by the current speed. If real-time data is unavailable, a default speed of 50 km/h is used. If the newly computed travel time to a neighboring node is shorter than previously recorded, the `G` value is updated, and the node is reinserted into the queue with an updated `F(n)`.  
+
+The process continues until the destination node is reached, at which point the shortest-time path is reconstructed using the predecessor dictionary. By incorporating live traffic conditions, this approach ensures that routing decisions prioritize travel efficiency rather than just physical distance.
+
+-> reconstruct_path: using the predecessor dictionary, we're able to track the nodes that we have traversed backwards, i.e., From End to start. The nodes are appended to a List and returned after reversal
