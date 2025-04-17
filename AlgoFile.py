@@ -20,16 +20,19 @@ def get_traffic_data(lat, lon):
     url = f"https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?key={TOMTOM_API_KEY}&point={lat},{lon}"
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
         data = response.json()
-        if "flowSegmentData" in data and data["flowSegmentData"]:
-            return data["flowSegmentData"][0].get("currentSpeed"), data["flowSegmentData"][0].get("freeFlowSpeed")
-        else:
-            return None, None  # No traffic data available for this segment
+        # Add error checking for empty or missing flowSegmentData
+        if ("flowSegmentData" in data and 
+            isinstance(data["flowSegmentData"], list) and 
+            len(data["flowSegmentData"]) > 0):
+            segment = data["flowSegmentData"][0]
+            return segment.get("currentSpeed"), segment.get("freeFlowSpeed")
+        return None, None
     except requests.exceptions.RequestException as e:
         print(f"Error fetching traffic data: {e}")
-        return None, None  # Return None if API request fails
-
+        return None, None
+    
 def calculate_travel_time(length, speed_kmh):
     """Calculates travel time in seconds given length in meters and speed in km/h."""
     if speed_kmh is not None and speed_kmh > 0:
